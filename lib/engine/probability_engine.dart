@@ -10,6 +10,8 @@ class ProbabilityResult {
   final double dealerBust;
   final double hitWinProb;
   final double standWinProb;
+  final bool canSplit;
+  final bool recommendSplit;
   
   ProbabilityResult({
     required this.dealer17,
@@ -20,9 +22,12 @@ class ProbabilityResult {
     required this.dealerBust,
     required this.hitWinProb,
     required this.standWinProb,
+    this.canSplit = false,
+    this.recommendSplit = false,
   });
 
   String get recommendation {
+    if (recommendSplit) return 'SPLIT';
     if (hitWinProb > standWinProb + 0.05) return 'HIT';
     if (standWinProb > hitWinProb) return 'STAND';
     return 'DOUBLE / HIT';
@@ -31,10 +36,11 @@ class ProbabilityResult {
 
 class SimulationInput {
   final Map<Rank, int> remainingCards;
+  final List<Rank> playerHand;
   final int playerTotal;
   final Rank? dealerUpcard;
 
-  SimulationInput(this.remainingCards, this.playerTotal, this.dealerUpcard);
+  SimulationInput(this.remainingCards, this.playerHand, this.playerTotal, this.dealerUpcard);
 }
 
 class ProbabilityEngine {
@@ -94,6 +100,30 @@ class ProbabilityEngine {
       else if (dealerFinal > 21) bustCount++;
     }
 
+    bool canSplit = input.playerHand.length == 2 && input.playerHand[0] == input.playerHand[1];
+    bool recommendSplit = false;
+    if (canSplit && dealerUpcard != null) {
+      int dv = dealerUpcard.value;
+      Rank r = input.playerHand[0];
+      switch (r) {
+        case Rank.ace:
+        case Rank.eight:
+          recommendSplit = true; break;
+        case Rank.seven:
+        case Rank.three:
+        case Rank.two:
+          recommendSplit = dv <= 7; break;
+        case Rank.six:
+          recommendSplit = dv >= 2 && dv <= 6; break;
+        case Rank.four:
+          recommendSplit = dv == 5 || dv == 6; break;
+        case Rank.nine:
+          recommendSplit = dv != 7 && dv != 10 && dv != 11; break;
+        default:
+          recommendSplit = false;
+      }
+    }
+
     return ProbabilityResult(
       dealer17: d17 / iterations,
       dealer18: d18 / iterations,
@@ -103,6 +133,8 @@ class ProbabilityEngine {
       dealerBust: bustCount / iterations,
       hitWinProb: hitWins / iterations,
       standWinProb: standWins / iterations,
+      canSplit: canSplit,
+      recommendSplit: recommendSplit,
     );
   }
 

@@ -8,8 +8,9 @@ final simulationProvider = FutureProvider<ProbabilityResult>((ref) async {
   
   final input = SimulationInput(
     gameState.remainingCards,
+    gameState.playerHand,
     gameState.playerTotal,
-    gameState.dealerRank,
+    gameState.dealerHand.isNotEmpty ? gameState.dealerHand.first : null,
   );
 
   // We use compute to run Monte Carlo in another thread to avoid jank

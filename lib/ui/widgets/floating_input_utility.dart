@@ -11,7 +11,8 @@ class FloatingInputUtility extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final List<Rank> inputOrder = [
       Rank.two, Rank.three, Rank.four, Rank.five, Rank.six,
-      Rank.seven, Rank.eight, Rank.nine, Rank.ten, Rank.ace
+      Rank.seven, Rank.eight, Rank.nine, Rank.ten, Rank.jack, 
+      Rank.queen, Rank.king, Rank.ace
     ];
     
     // Note: Ten stands for 10, J, Q, K as they all share the same logic in standard counting.
@@ -44,12 +45,11 @@ class FloatingInputUtility extends ConsumerWidget {
           runSpacing: 8,
           alignment: WrapAlignment.center,
           children: inputOrder.map((rank) {
-            final isFace = rank == Rank.ten;
-            final label = isFace ? '10/J\nQ/K' : rank.label;
+            final label = rank.label;
             
             Color accent = Colors.white24;
-            if (rank.hiLoValue > 0) accent = AppTheme.neonGreen.withOpacity(0.3);
-            if (rank.hiLoValue < 0) accent = AppTheme.vibrantRed.withOpacity(0.3);
+            if (rank.hiLoValue > 0) accent = AppTheme.neonGreen.withValues(alpha: 0.3);
+            if (rank.hiLoValue < 0) accent = AppTheme.vibrantRed.withValues(alpha: 0.3);
 
             return InkWell(
               onTap: () {
@@ -57,7 +57,7 @@ class FloatingInputUtility extends ConsumerWidget {
               },
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                width: (MediaQuery.of(context).size.width - 80) / 5,
+                width: (MediaQuery.of(context).size.width - 90) / 5,
                 height: 50,
                 decoration: BoxDecoration(
                   color: AppTheme.background,
