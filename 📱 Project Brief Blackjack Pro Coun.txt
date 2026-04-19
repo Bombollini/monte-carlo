@@ -1,0 +1,55 @@
+📱 Project Brief: Blackjack Pro Counter & Prob (Flutter Mobile)
+📌 Project Overview
+Aplikasi mobile untuk asisten pemain Blackjack yang menghitung Card Counting (Hi-Lo) dan Probabilitas Real-time menggunakan simulasi Monte Carlo. Aplikasi harus memiliki estetika "Immersive UI" (dark, glass-morphism, high-contrast) untuk penggunaan profesional dan diskrit.
+🧠 Core Logic & Services
+1. Card Counting Engine (Hi-Lo System)
+Values:
+2, 3, 4, 5, 6 → +1
+7, 8, 9 → 0
+10, J, Q, K, A → -1
+Metrics:
+Running Count: Jumlah kumulatif Hi-Lo.
+True Count: Running Count / Decks Remaining. (Satu deck = 52 kartu).
+2. Deck Management
+Initial Setup: Support 1, 2, 4, 6, dan 8 decks.
+Inventory: Gunakan Frequency Map (bukan list satu-satu) untuk efisiensi: Map<String, int> remainingCards.
+History: Stack LIFO untuk fitur Undo (maksimal 50 record).
+3. Probability Engine
+Next Card Probability: Sisa kartu tertentu / Total kartu tersisa.
+Player Bust Probability: Iterasi sisa kartu, hitung persentase kartu yang jika ditarik akan membuat Total > 21.
+Dealer Outcome Simulation (Monte Carlo):
+Lakukan minimal 4.000 iterasi per update state.
+Dealer harus hit sampai minimal 17.
+Output: Persentase kemungkinan Dealer berakhir di 17, 18, 19, 20, 21, atau Bust.
+Strategic Advice (Win % Optimization):
+Stand Win %: Peluang dealer bust + peluang skor dealer < skor player.
+Hit Win %: Ekspektasi peluang menang jika menarik 1 kartu lagi (berdasarkan distribusi kartu yang tidak bust).
+Recommendation: Output HIT, STAND, atau DOUBLE berdasarkan Win % tertinggi.
+🎨 Design Specification (Immersive UI)
+1. Visual Theme
+Background: Deep Black (#050506).
+Surface: Dark Grey (#121214) dengan border semi-transparan (glass-border).
+Accents:
+Neon Green (#00E676) - Positive Count / Hit.
+Vibrant Red (#FF5252) - Negative Count / Bust / Stand.
+Digital Gold (#FFD600) - Probabilities / Advice.
+2. Key Components (Widgets)
+True Count Ring: Lingkaran besar dengan gradient border neon yang menampilkan Running Count di tengah dan True Count di bawahnya.
+Probability Cards: Card dengan progress bar halus yang menunjukkan risiko secara visual.
+Strategic Advice Panel: Panel yang membandingkan "Win Probability" antara Hit dan Stand menggunakan bar horizontal yang menyala.
+Deck Inventory Grid: Grid 5 kolom yang menampilkan Raw Count (Sisa kartu) dan % Prob (Peluang ditarik next hit).
+Floating Input Utility: Grid tombol kartu di bagian bawah (fixed) untuk input satu tangan yang cepat.
+🧱 Technical Stack (Recommended)
+Language: Dart.
+State Management: Riverpod atau Bloc (disarankan Riverpod untuk sinkronisasi state inventory dan simulasi).
+Animations: Implicit Animations atau Rive untuk efek glow ring.
+Performance: Karena ada simulasi Monte Carlo, jalankan logika kalkulasi di dalam Isolate agar UI tidak lag.
+🚀 Navigation Flow
+Setup View: Pilih jumlah deck -> Inisialisasi GameState.
+Main View: Dashboard utama (Ring Count, Advice, Inventory).
+Log View: Drawer atau bottom sheet untuk riwayat kartu yang sudah keluar.
+Reshuffle: Tombol reset global untuk memulai ulang deck dari nol.
+Notes for Copilot:
+Pastikan logika Aces (As) diperlakukan dinamis (bisa bernilai 1 atau 11) pada perhitungan bust player.
+Dealer hit/bust logic harus mengikuti standar rule Blackjack (Dealer stands on soft 17).
+Prioritaskan UX input kartu yang sangat cepat (low latency).
