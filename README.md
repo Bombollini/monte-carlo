@@ -62,4 +62,3 @@ This application is for educational and entertainment purposes only. Card counti
 
 ---
 
-*Build with ❤️ by Antigravity AI*
