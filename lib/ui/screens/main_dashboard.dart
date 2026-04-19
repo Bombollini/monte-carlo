@@ -21,7 +21,7 @@ class MainDashboard extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'Shoe: ${gameState.initialDecks} | Cards: ${gameState.totalRemaining}',
+            'Shoe: ${gameState.initialDecks} | Cards: ${gameState.totalRemaining} | TC: ${gameState.trueCount > 0 ? '+' : ''}${gameState.trueCount.toStringAsFixed(1)}',
             style: const TextStyle(fontSize: 14, color: Colors.white70),
           ),
           actions: [
@@ -76,6 +76,8 @@ class MainDashboard extends ConsumerWidget {
       child: Column(
         children: [
           _buildHandContextRow(context, ref, state),
+          const SizedBox(height: 12),
+          _buildTrueCountBanner(state),
           const SizedBox(height: 16),
           const SideBetPanel(),
           const SizedBox(height: 16),
@@ -207,6 +209,29 @@ class MainDashboard extends ConsumerWidget {
               const SizedBox(height: 12),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTrueCountBanner(DeckState state) {
+    final color = state.trueCount >= 2 ? AppTheme.neonGreen : (state.trueCount <= -1 ? AppTheme.vibrantRed : Colors.white24);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text('HI-LO TRUE COUNT', style: TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold, letterSpacing: 1)),
+          Text(
+            '${state.trueCount > 0 ? '+' : ''}${state.trueCount.toStringAsFixed(2)}',
+            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ],
       ),
     );
   }
