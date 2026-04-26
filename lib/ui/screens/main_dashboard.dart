@@ -21,7 +21,7 @@ class MainDashboard extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'Shoe: ${gameState.initialDecks} | Cards: ${gameState.totalRemaining} | TC: ${gameState.trueCount > 0 ? '+' : ''}${gameState.trueCount.toStringAsFixed(1)}',
+            'Cards: ${gameState.totalRemaining} | RC: ${gameState.runningCount > 0 ? '+' : ''}${gameState.runningCount} | TC: ${gameState.trueCount > 0 ? '+' : ''}${gameState.trueCount.toStringAsFixed(1)}',
             style: const TextStyle(fontSize: 14, color: Colors.white70),
           ),
           actions: [
@@ -37,7 +37,6 @@ class MainDashboard extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.refresh, color: AppTheme.vibrantRed),
               onPressed: () {
-                ref.invalidate(deckManagerProvider);
                 ref.invalidate(gameStateProvider);
               },
             ),
@@ -214,7 +213,8 @@ class MainDashboard extends ConsumerWidget {
   }
 
   Widget _buildTrueCountBanner(DeckState state) {
-    final color = state.trueCount >= 2 ? AppTheme.neonGreen : (state.trueCount <= -1 ? AppTheme.vibrantRed : Colors.white24);
+    final int rc = state.runningCount;
+    final color = rc > 0 ? AppTheme.neonGreen : (rc < 0 ? AppTheme.vibrantRed : Colors.white24);
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -226,9 +226,9 @@ class MainDashboard extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('HI-LO TRUE COUNT', style: TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold, letterSpacing: 1)),
+          const Text('HI-LO RUNNING COUNT', style: TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold, letterSpacing: 1)),
           Text(
-            '${state.trueCount > 0 ? '+' : ''}${state.trueCount.toStringAsFixed(2)}',
+            rc > 0 ? '+$rc' : '$rc',
             style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16),
           ),
         ],

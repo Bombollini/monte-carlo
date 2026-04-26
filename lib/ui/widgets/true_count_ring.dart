@@ -9,12 +9,16 @@ class TrueCountRing extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gameState = ref.watch(gameStateProvider);
-    final count = gameState.trueCount;
     final int runningCount = gameState.runningCount;
+    final double trueCount = gameState.trueCount;
 
     Color countColor = AppTheme.digitalGold;
-    if (count > 0) countColor = AppTheme.neonGreen;
-    if (count < 0) countColor = AppTheme.vibrantRed;
+    if (runningCount > 0) countColor = AppTheme.neonGreen;
+    if (runningCount < 0) countColor = AppTheme.vibrantRed;
+
+    final String rcLabel = runningCount > 0 ? '+$runningCount' : '$runningCount';
+    final String tcLabel =
+        '${trueCount > 0 ? '+' : ''}${trueCount.toStringAsFixed(1)}';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -35,19 +39,19 @@ class TrueCountRing extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-              Text(
-                'PELUANG',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 10,
-                  letterSpacing: 2,
-                ),
+            Text(
+              'HI-LO',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 10,
+                letterSpacing: 2,
               ),
+            ),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               child: Text(
-                '${(count * 100).toStringAsFixed(0)}%',
-                key: ValueKey((count * 100).toStringAsFixed(0)),
+                rcLabel,
+                key: ValueKey(rcLabel),
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
                       color: countColor,
                       height: 1.2,
@@ -56,7 +60,7 @@ class TrueCountRing extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'HITUNGAN: $runningCount',
+              'TC: $tcLabel',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.4),
                 fontSize: 12,

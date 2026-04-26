@@ -10,11 +10,6 @@ class DeckCountNotifier extends Notifier<int> {
 
 final deckCountProvider = NotifierProvider<DeckCountNotifier, int>(DeckCountNotifier.new);
 
-final deckManagerProvider = Provider<DeckManager>((ref) {
-  final decks = ref.watch(deckCountProvider);
-  return DeckManager(initialDecks: decks);
-});
-
 enum InputFocus { none, player, dealer }
 
 class DeckState {
@@ -87,10 +82,15 @@ class DeckState {
 }
 
 class GameStateNotifier extends Notifier<DeckState> {
+  // DeckManager is owned here — never re-created by a Provider on rebuild.
+  late DeckManager _manager;
+
   @override
   DeckState build() {
-    final manager = ref.watch(deckManagerProvider);
-    return _createState(manager, [], [], InputFocus.none);
+    final decks = ref.watch(deckCountProvider);
+    // Only rebuild the manager when deck count actually changes.
+    _manager = DeckManager(initialDecks: decks);
+    return _createState([], [], InputFocus.none);
   }
 
   int _calculateTotal(List<Rank> hand) {
@@ -111,26 +111,25 @@ class GameStateNotifier extends Notifier<DeckState> {
     return total;
   }
 
-  DeckState _createState(DeckManager manager, List<Rank> playerHand, List<Rank> dealerHand, InputFocus focus) {
+  DeckState _createState(List<Rank> playerHand, List<Rank> dealerHand, InputFocus focus) {
     int runningCount = 0;
-    for (var card in manager.history) {
+    for (var card in _manager.history) {
       runningCount += card.hiLoValue;
     }
-    
-    int remainingCardsCount = manager.totalCardsRemaining;
+
+    int remainingCardsCount = _manager.totalCardsRemaining;
     double decksRemaining = remainingCardsCount / 52.0;
     double trueCount = decksRemaining == 0 ? 0 : runningCount / decksRemaining;
 
     int playerTotal = _calculateTotal(playerHand);
     int dealerTotal = _calculateTotal(dealerHand);
-    Rank? dealerUpcard = dealerHand.isNotEmpty ? dealerHand.first : null;
     int bustCards = 0;
     int smallCount = 0;
     int mediumCount = 0;
     int largeCount = 0;
     int aceCount = 0;
 
-    manager.remainingCards.forEach((Rank rank, int count) {
+    _manager.remainingCards.forEach((Rank rank, int count) {
       // Group Probabilities
       if (rank == Rank.ace) {
         aceCount += count;
@@ -155,7 +154,7 @@ class GameStateNotifier extends Notifier<DeckState> {
     if (playerTotal >= 21 && playerHand.isNotEmpty) {
       bustCards = remainingCardsCount;
     }
-    
+
     double bustProbability = remainingCardsCount == 0 ? 0 : bustCards / remainingCardsCount;
     double smallProb = remainingCardsCount == 0 ? 0 : smallCount / remainingCardsCount;
     double mediumProb = remainingCardsCount == 0 ? 0 : mediumCount / remainingCardsCount;
@@ -165,24 +164,24 @@ class GameStateNotifier extends Notifier<DeckState> {
     // Side Bets
     double pairProb = 0;
     double straightProb = 0;
-    double luckySevenProb = remainingCardsCount == 0 ? 0 : (manager.remainingCards[Rank.seven] ?? 0) / remainingCardsCount;
+    double luckySevenProb = remainingCardsCount == 0 ? 0 : (_manager.remainingCards[Rank.seven] ?? 0) / remainingCardsCount;
 
     if (playerHand.length == 1) {
       final r = playerHand[0];
-      pairProb = (manager.remainingCards[r] ?? 0) / (remainingCardsCount == 0 ? 1 : remainingCardsCount);
-      
+      pairProb = (_manager.remainingCards[r] ?? 0) / (remainingCardsCount == 0 ? 1 : remainingCardsCount);
+
       int neighbors = 0;
       // Straight neighbors (+1 or -1)
       final allRanks = Rank.values;
       final idx = allRanks.indexOf(r);
-      if (idx > 0) neighbors += manager.remainingCards[allRanks[idx-1]] ?? 0;
-      if (idx < allRanks.length - 1) neighbors += manager.remainingCards[allRanks[idx+1]] ?? 0;
+      if (idx > 0) neighbors += _manager.remainingCards[allRanks[idx - 1]] ?? 0;
+      if (idx < allRanks.length - 1) neighbors += _manager.remainingCards[allRanks[idx + 1]] ?? 0;
       straightProb = neighbors / (remainingCardsCount == 0 ? 1 : remainingCardsCount);
     } else if (playerHand.isEmpty) {
       // General pair chance (any pair in next 2)
       double sum = 0;
       if (remainingCardsCount > 1) {
-        manager.remainingCards.forEach((r, count) {
+        _manager.remainingCards.forEach((r, count) {
           sum += (count / remainingCardsCount) * ((count - 1) / (remainingCardsCount - 1));
         });
       }
@@ -190,9 +189,9 @@ class GameStateNotifier extends Notifier<DeckState> {
     }
 
     return DeckState(
-      remainingCards: Map.from(manager.remainingCards),
+      remainingCards: Map.from(_manager.remainingCards),
       totalRemaining: remainingCardsCount,
-      initialDecks: manager.initialDecks,
+      initialDecks: _manager.initialDecks,
       runningCount: runningCount,
       trueCount: trueCount,
       playerHand: List.from(playerHand),
@@ -212,37 +211,34 @@ class GameStateNotifier extends Notifier<DeckState> {
   }
 
   void drawCard(Rank rank) {
-    final manager = ref.read(deckManagerProvider);
-    
     List<Rank> nextPlayerHand = List.from(state.playerHand);
     List<Rank> nextDealerHand = List.from(state.dealerHand);
-    
+
     if (state.inputFocus == InputFocus.player) {
       nextPlayerHand.add(rank);
     } else if (state.inputFocus == InputFocus.dealer) {
       nextDealerHand.add(rank);
     }
-    
-    manager.drawCard(rank);
-    state = _createState(manager, nextPlayerHand, nextDealerHand, state.inputFocus);
+
+    _manager.drawCard(rank);
+    state = _createState(nextPlayerHand, nextDealerHand, state.inputFocus);
   }
 
   void undo() {
-    final manager = ref.read(deckManagerProvider);
-    if (manager.history.isEmpty) return;
-    
-    final lastRank = manager.history.last;
+    if (_manager.history.isEmpty) return;
+
+    final lastRank = _manager.history.last;
     List<Rank> nextPlayerHand = List.from(state.playerHand);
     List<Rank> nextDealerHand = List.from(state.dealerHand);
-    
+
     if (nextDealerHand.isNotEmpty && nextDealerHand.last == lastRank) {
       nextDealerHand.removeLast();
     } else if (nextPlayerHand.isNotEmpty && nextPlayerHand.last == lastRank) {
       nextPlayerHand.removeLast();
     }
-    
-    manager.undoDrawnCard();
-    state = _createState(manager, nextPlayerHand, nextDealerHand, state.inputFocus);
+
+    _manager.undoDrawnCard();
+    state = _createState(nextPlayerHand, nextDealerHand, state.inputFocus);
   }
 
   void setInputFocus(InputFocus focus) {
@@ -250,21 +246,14 @@ class GameStateNotifier extends Notifier<DeckState> {
   }
 
   void clearHands() {
-    state = _createState(ref.read(deckManagerProvider), [], [], state.inputFocus);
-  }
-
-  // Backwards compatibility or manual override
-  void setPlayerTotal(int total) {
-    // This is hard since we track specific cards now. 
-    // We'll just clear the hand and mock it with a dummy "total" for now if needed, 
-    // but the new way is much better. For now, let's just make it a no-op or clear.
+    state = _createState([], [], state.inputFocus);
   }
 
   void setDealerRank(Rank? rank) {
     if (rank == null) {
-      state = _createState(ref.read(deckManagerProvider), state.playerHand, [], state.inputFocus);
+      state = _createState(state.playerHand, [], state.inputFocus);
     } else {
-      state = _createState(ref.read(deckManagerProvider), state.playerHand, [rank], state.inputFocus);
+      state = _createState(state.playerHand, [rank], state.inputFocus);
     }
   }
 }
